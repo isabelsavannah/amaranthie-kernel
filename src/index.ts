@@ -1,1 +1,3 @@
-console.log("hello, world!")
+import {GossipPeers} from "./gossip_peers.js"
+
+net()
