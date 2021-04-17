@@ -15,88 +15,109 @@ interface PeerAddress {
 }
 
 interface Peer {
+  readonly id: String
   readonly address: PeerAddress
-  readonly lastKnownLive: number
-  readonly knownLive: boolean
+  readonly live: boolean
   readonly useSocket: (socket: Socket) => void
 }
 
-function initPeer(peer: PeerAddress, destroy: () => void): Peer {
-  let lastNonceSent = []
-  let lastNonceRecvd = 0
-  let socket = null
-  let openSocketAttempts = 0
+let peers: {[key: string]: PeerState} = {}
+let pendingPeers: [PeerAddress] = {}
 
-  let publicState = {
-    address: peer,
-    knownLive: false,
-    lastKnownLive: Date.now(),
-    useSocket: () => void,
+function runPeer(peer: PeerAddress) {
+  async function stateWrap() {
+    try { 
+      peers[peer.id] = createState()
+      await peerThread()
+    } catch (err) {
+      log(`dropping peer ${peer.id}: ${err}`)
+    } finally {  
+      delete(peers[peer.id])
+    }
   }
 
-  async function runPeer() {
+  function createState() {
+    peers[peer.id] = {
+      id: peer.id,
+      address: peer,
+      live: false,
+      useSocket: () => {}
+    }
+  }
+
+  async function peerThread(initialSocket?: Socket) {
+    let obtainedSocket = initialSocket ? initialSocket : await obtainSocket()
+
     while(true) {
-      try {
-        let socket = await getSocket()
-      } catch (err) {
-        destroy()
-        break
+      // a new socket per loop
+      peers[peer.id].useSocket = useSocket
+      useSocket(obtainedSocket)
+
+      while(true) {
+        try {
+          sendHeartbeat(peers[peer.id].socket)
+          await timersPromises.setTimeout(config.gossip.gossipIntervalMillis)
+        } catch (err) {
+          // our socket is broken, need a new one, log this
+          obtainedSocket = await obtainSocket()
+          break
+        }
       }
+    }
+  }
 
+  function setupListen() {
+    //...
+  }
 
-      
-    getSocket()
-      .then(/*send heartbeat messages until error/*, reject)
-      .catch(
+  function sendHeartbeat() {
+    //...
+  }
 
+  function useSocket(sock: Socket) {
+    if(peers[peer.id].socket)
+      peers[peer.id].socket.close()
 
-  function getSocket(attemptNumber: number = 1): Promise<Socket> {
+    peers[peer.id].socket = sock
+    setupListen(sock)
+  }
+
+  function obtainSocket() {
+    let outside = Promise.new((resolve, reject) => {
+      peers[peer.id].useSocket = resolve
+    })
+    return connectSocket(outside)
+  }
+
+  function connectSocket(
+    preemptPromise: Promise<Socket>,
+    attemptNumber: number = 1)
+  : Promise<Socket> {
+
     let attempt = Promise((resolve, reject) => {
       let candidateSocket = new net.Socket()
       candidateSocket.on('connect', () => resolve(candidateSocket))
       candidateSocket.on('error', reject)
+      timers.setTimeout(config.gossip.connectionTimeoutMillis, reject)
     })
 
+    let preemptableAttempt = Promise.race([attempt, preemptPromise])
+
     if(attemptNumber >= config.gossip.connectionMaxRetries) {
-      return attempt
+      return preemptableAttempt
     } else {
       let delayFactor = config.gossip.connectionRetryBackoffFactor ** (attemptNumber - 1)
       let delay = config.gossip.connectionRetryBaseMillis * delayFactor
-      return attempt
+      return preemptableAttempt
         .catch(() => timersPromises.setTimeout(delay))
-        .then(() => getSocket(attemptNumber+1))
+        .then(() => connectSocket(preemptPromise, attemptNumber+1))
     }
   }
-
-  function tick(socket: Socket) {
-    // send heartbeat
-    // then weait
-    // then repeat
-    // if we fail, open a new socket
-    // 
-
-
-  function run() {
-    getSocket()
-      .then(
-
-  async function tend() {
-    while(true) {
-      let socket = await getSocket()
-
-      
-
-
-
 }
-    
-
 
 export function GossipPeers(): Net{
   log("initializing net")
 
-  let peers: {[key: string]: PeerState} = {}
-  let pendingPeers: [PeerAddress] = {}
 
   function evaluateNewPeer() {
    if(!pendingPeers.length) {
@@ -107,6 +128,16 @@ export function GossipPeers(): Net{
       evaluateNewPeer()
 
     peers[peer.id] = initPeer(peer)
+  }
+
+  function registerPeer(peer: PeerAddress, socket?: Socket) {
+    if(peers[peer.id]) {
+      if(socket) {
+        peers[peer.id].offerSocket(socket);
+        return
+      }
+    }
+    runPeer(peer, socket)
   }
 
   function tick() {
@@ -123,3 +154,4 @@ export function GossipPeers(): Net{
     },
   }
 }
+

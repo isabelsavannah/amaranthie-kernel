@@ -6,10 +6,10 @@ export default {
   gossip: {
     listenPort: 1234,
     gossipIntervalMillis: 30000,
-    aliveGraceMillis: 65000,
-    forgetGraceMillis: 600000,
+
     connectionRetryBaseMillis: 5000,
     connectionRetryBackoffFactor: 2,
-    nonceWindow: 3,
+    connectionMaxRetries: 10,
+    connectionTimeoutMillis: 5000
   },
 }
