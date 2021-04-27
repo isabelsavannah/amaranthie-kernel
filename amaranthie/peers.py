@@ -7,6 +7,7 @@ from collections import deque
 from dataclasses import dataclass
 
 from amaranthie.config import config
+from amaranthie.asy import create_task_watch_error
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class PeerServer:
     async def run(self):
         log.info(f"Starting server as {self.address}")
         server = await asyncio.start_server(self._handle_connection, port=config["peers"]["listen_port"])
-        self.connect_thread = asyncio.create_task(self._connect_peers())
+        self.connect_thread = create_task_watch_error(self._connect_peers())
         await server.serve_forever()
 
     async def _connect_peers(self): 
@@ -35,7 +36,7 @@ class PeerServer:
             address = self.peers_queue.pop()
             if self._is_new_address(address):
                 log.info(f"trying to establish connection with {address}")
-                asyncio.create_task(self._connect_to(address))
+                create_task_watch_error(self._connect_to(address))
 
     async def _connect_to(self, address):
         (reader, writer) = await asyncio.open_connection(address["host"], address["port"])
@@ -44,7 +45,7 @@ class PeerServer:
     async def _handle_connection(self, reader, writer): 
         log.debug("got socket")
         socket = ChunkedSocket(reader, writer)
-        asyncio.create_task(socket.write_message(json.dumps(self.write_heartbeat())))
+        create_task_watch_error(socket.write_message(json.dumps(self.write_heartbeat())))
         message = await socket.read_message()
         try:
             obj = json.loads(message)
@@ -88,8 +89,8 @@ class PeerServer:
 class PeerSocket:
     def __init__(self, socket, server):
         self.socket = socket
-        self.read_thread = asyncio.create_task(self._read())
-        self.write_thread = asyncio.create_task(self._write())
+        self.read_thread = create_task_watch_error(self._read())
+        self.write_thread = create_task_watch_error(self._write())
         self.server = server
 
     async def _read(self):
