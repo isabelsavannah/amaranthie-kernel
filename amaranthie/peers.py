@@ -14,8 +14,10 @@ log = logging.getLogger(__name__)
 def peer_address(id, host, port):
     return {"id": id, "host": host, "port": port}
 
-#TDD into reestablishing broken connections
+class ProtocolError(Exception):
+    pass
 
+# not going to bother with a reconnect protocol. just rely on discovery.
 class PeerServer:
     def __init__(self):
         self.peers = {}
@@ -43,25 +45,38 @@ class PeerServer:
         await self._handle_connection(reader, writer)
 
     async def _handle_connection(self, reader, writer): 
-        log.debug("got socket")
+        log.debug(f"got socket with {writer.transport.get_extra_info('peername')}")
         socket = ChunkedSocket(reader, writer)
+        try:
+            partner = await self._handshake(socket)
+            create_task_watch_error(self._socket_lifecycle(partner, socket))
+        except Exception as err:
+            logging.error(f"dropping unidentified socket because {err}")
+
+    async def _handshake(self, socket):
         create_task_watch_error(socket.write_message(json.dumps(self.write_heartbeat())))
         message = await socket.read_message()
         try:
             obj = json.loads(message)
             sender = obj["sender"]
-            log.info(f"incoming socket identified as {sender}")
-            self._got_socket(sender, socket)
+            log.info(f"socket identified as {sender}")
             self.handle_heartbeat(obj)
+            return sender
         except Exception as err:
-            log.error(f"socket dropped because handshake message doesn't have sender: {message} {err}")
+            raise ProtocolError(err)
 
-    def _got_socket(self, address, socket):
-        peer_socket = PeerSocket(socket, self)
-        peer_socket.address = address
-        if address["id"] in self.peers.keys():
+    async def _socket_lifecycle(self, address, socket):
+        try:
+            peer_socket = PeerSocket(socket, self)
+            peer_socket.address = address
+            if address["id"] in self.peers.keys():
+                self.peers[address["id"]].close()
+            self.peers[address["id"]] = peer_socket
+            await peer_socket.wait_err()
+        finally:
+            log.info(f"connection with {address} broken")
             self.peers[address["id"]].close()
-        self.peers[address["id"]] = peer_socket
+            del self.peers[address["id"]]
 
     def _is_new_address(self, address):
         if(address["id"] == self.address["id"]):
@@ -89,8 +104,8 @@ class PeerServer:
 class PeerSocket:
     def __init__(self, socket, server):
         self.socket = socket
-        self.read_thread = create_task_watch_error(self._read())
-        self.write_thread = create_task_watch_error(self._write())
+        self.read_thread = asyncio.create_task(self._read())
+        self.write_thread = asyncio.create_task(self._write())
         self.server = server
 
     async def _read(self):
@@ -106,6 +121,9 @@ class PeerSocket:
         while True:
             await self.socket.write_message(json.dumps(self.server.write_heartbeat()))
             await asyncio.sleep(config["peers"]["heartbeat_interval_seconds"])
+
+    async def wait_err(self):
+        await asyncio.wait([self.read_thread, self.write_thread], return_when=asyncio.FIRST_EXCEPTION)
 
     def close(self):
         self.read_thread.cancel()
