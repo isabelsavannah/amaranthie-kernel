@@ -8,4 +8,8 @@ config = {
     "heartbeat_interval_seconds": 30,
     "connect_interval_seconds": 10,
   },
+
+  "state": {
+    "path": "state",
+  },
 }
