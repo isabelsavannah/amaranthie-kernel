@@ -11,5 +11,6 @@ config = {
 
   "state": {
     "path": "state",
+    "encoding": "utf-8",
   },
 }

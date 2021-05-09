@@ -1,0 +1,26 @@
+
+CRDTs identified by a prefix [ordered list of ids that map to a directory, to support domains and nesting later] and a id:type pair
+
+CRDT directory:
+	instantiates a hypothetical crdt based on a an identifier
+	maps to a fs, so we can know the set of crdts (for sync)
+	guarentees that instantiations are singletons
+
+CRDT server:
+	sends updates over the network
+	recieves updates and applies them to local state
+	runs sync thread
+
+CRDT instance:
+	authors updates
+		sends them to server
+		(recieves them from server - the coordination point is here)
+		applies them to local state and fs
+  produces and resolves digests
+	understands both the disk and network format; those are opague to server and directory
+    (these two are all the complexity of the particular crdt implementation)
+
+CRDT identifier:
+	(id x type) tuple (could do it without the type but why; makes it maximally simple to instantiate from disk)
+
+No support for nesting/domains in first version; everything can be global
