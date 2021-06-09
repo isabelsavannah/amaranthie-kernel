@@ -1,4 +1,3 @@
-
 CRDTs identified by a prefix [ordered list of ids that map to a directory, to support domains and nesting later] and a id:type pair
 
 CRDT directory:

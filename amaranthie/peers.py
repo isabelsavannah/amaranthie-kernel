@@ -10,6 +10,7 @@ from amaranthie.config import config
 from amaranthie.asy import create_task_watch_error
 
 log = logging.getLogger(__name__)
+protocol_channel = "local_peers_protocol"
 
 def peer_address(id, host, port):
     return {"id": id, "host": host, "port": port}
@@ -60,7 +61,7 @@ class PeerServer:
             obj = json.loads(message)
             sender = obj["sender"]
             log.info(f"socket identified as {sender}")
-            self.handle_heartbeat(obj)
+            self.handle_message(obj)
             return sender
         except Exception as err:
             raise ProtocolError(err)
@@ -86,13 +87,19 @@ class PeerServer:
         return True
 
     def write_heartbeat(self):
-        result = {"sender": self.address}
+        result = {"sender": self.address, "channel", protocol_channel}
         if len(self.peers) > 0:
             peer_id = random.choice(list(self.peers.keys()))
             result["peer"] = self.peers[peer_id].address
         return result
 
-    def handle_heartbeat(self, heartbeat):
+    def handle_message(self, message):
+        if message["channel"] == protocol_channel:
+            self._handle_heartbeat(self, message)
+        else:
+            local_pubsub.pub(message["channel"], message)
+
+    def _handle_heartbeat(self, heartbeat):
         if "peer" in heartbeat.keys():
             peer = heartbeat["peer"]
             if self._is_new_address(peer):
@@ -113,7 +120,7 @@ class PeerSocket:
             message = await self.socket.read_message()
             try:
                 obj = json.loads(message)
-                self.server.handle_heartbeat(obj)
+                self.server.handle_message(obj)
             except Exception as err:
                 log.error(f"ignoring message {message} because {err}")
 
