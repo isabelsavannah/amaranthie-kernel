@@ -5,8 +5,9 @@ class IllegalIDException(Exception):
     pass
 
 class RichID:
-    def __init__(self, id_seq):
-        flat_words = flatten_id(id_seq)
+    def __init__(self, *data):
+        flat_words = list(normalizing_flatten(data))
+
         if not all(self._validate_word(word) for word in flat_words):
             raise IllegalIDException()
         self.id_words = flat_words
@@ -38,28 +39,17 @@ class RichID:
     def __gt__(self, other):
         return str(self) > str(other)
 
-    @classMethod
-    from_string(cls, string):
-        if len(string) < 1:
-            throw IllegalIDException()
-        words = string.split("/")
-        return cls(words)
-
-    @classMethod
-    from_path(cls, path):
-        words = path.parts()
-        if len(words) < 1:
-            throw IllegalIDException()
-        return cls(words)
-
-def flatten_id(*args):
-    return list(_pathify_generator(args))
-
-def _pathify_generator(args):
+def normalizing_flatten(args):
     for element in args:
         if isinstance(element, str):
-            yield element
+            if len(element) < 1:
+                throw IllegalIDException()
+            yield from element.split("/")
+        if isinstance(element, RichId):
+            yield from element.id_words
+        if isinstance(element, pathlib.PurePath):
+            yield from element.parts
         else:
-            yield from _pathify_generator(element)
+            yield from normalizing_flatten(element)
 
 
