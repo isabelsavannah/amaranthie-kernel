@@ -1,0 +1,5 @@
+Central pub/sub for kernel messages
+  and also local applications can hook into it
+
+We use localpeers only for initial discovery/hooking into the network; everything else is done over graphql (which is advertised both by crdt and by local peers)
+

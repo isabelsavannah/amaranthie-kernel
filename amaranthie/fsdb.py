@@ -29,20 +29,10 @@ def delete(prefix, key):
 def delete_set(prefix):
     shutil.rmtree(pathify(prefix))
 
-def flatten_id(*args):
-    return list(_pathify_generator(args))
-
 def pathify(*args):
-    dirs = list(_pathify_generator(args))
+    dirs = flatten_id
     full = os.path.relpath(os.path.join(state_root, *dirs))
     return full
-
-def _pathify_generator(args):
-    for element in args:
-        if isinstance(element, str):
-            yield element
-        else:
-            yield from _pathify_generator(element)
 
 class FsView:
     def __init__(self, prefix, parent = None):
