@@ -28,6 +28,9 @@ class RichID:
     def __iter__(self):
         yield from self.id_words
 
+    def __hash__(self):
+        return hash(self.str)
+
     def __eq__(self, other):
         return str(self) == str(other)
     def __le__(self, other):
