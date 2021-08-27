@@ -1,5 +1,6 @@
 from aiohttp import web
 from schema import schema
+from strawberry.aiohttp.views import GraphQLView
 
 async def handle(request):
     name = request.match_info.get('name', "Anonymous")
@@ -13,8 +14,8 @@ async def handle_graph(request):
     return web.Response(text="no query?")
 
 app = web.Application()
-app.add_routes([web.get('/', handle),
-                web.get('/graphql', handle_graph)])
+app.add_routes([web.get('/', handle)])
+app.router.add_route("*", "/graphql", GraphQLView(schema=schema))
 
 if __name__ == '__main__':
     web.run_app(app)
