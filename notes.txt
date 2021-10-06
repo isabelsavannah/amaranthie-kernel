@@ -3,3 +3,17 @@ Central pub/sub for kernel messages
 
 We use localpeers only for initial discovery/hooking into the network; everything else is done over graphql (which is advertised both by crdt and by local peers)
 
+We're in the business of providing messging/querying to protocols as a service. we have to be. so, we do subscriptions from stwarberry, since that's supported. 
+
+subscriptions to topics gets you unsolicited messaging.
+subscriptions to paths gets you single-source crdt state, instead of replicating it everywhere. 
+a common graphql-level interface that signals to the client to request a subscription, exposed to the client as a query response.
+
+get ten raspberry pis, run 16 kernels on each of them. fuck it; if i'm gonna do this, let it be fun, right?
+
+have a bare-metal thing, written in plain python, that runs on every entity. it manages shutdowns, it talks to docker and starts a kernel container if appropriate for this machine. inside containers, it offers pipes to parent, etc.
+
+crdts don't have to be kept in memory if it all understands itself in a tree
+
+fuck it, let's just do kademlia for our global db, is'nt this supposed to be fun? 
+and if we run 10 agents per host, we definitely have the size for it

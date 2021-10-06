@@ -16,7 +16,7 @@ def decode(key):
     return key.split("-")
 
 def obtain_crdt_instance(name, typename, prefix):
-    canonical_name = fsdb.flatten_id(prefix, encode(isntance_id, name))
+    canonical_name = fsdb.flatten_id(prefix, encode(instance_id, name))
 
     if canonical_name not in live:
         live[canonical_name] = _construct(name, typename, prefix)
