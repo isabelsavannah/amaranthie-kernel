@@ -1,4 +1,5 @@
-from amaranthie.random import random_id
+from amaranthie.random_util import random_id
+from amaranthie import logging_util
 
 config = {
   "id": random_id(),
@@ -14,3 +15,5 @@ config = {
     "encoding": "utf-8",
   },
 }
+
+logging_util.set_id(config["id"])

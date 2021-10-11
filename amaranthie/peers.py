@@ -87,7 +87,7 @@ class PeerServer:
         return True
 
     def write_heartbeat(self):
-        result = {"sender": self.address, "channel", protocol_channel}
+        result = {"sender": self.address, "channel": protocol_channel}
         if len(self.peers) > 0:
             peer_id = random.choice(list(self.peers.keys()))
             result["peer"] = self.peers[peer_id].address
