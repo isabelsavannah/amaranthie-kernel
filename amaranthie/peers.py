@@ -10,7 +10,10 @@ from amaranthie.config import config
 from amaranthie.asy import create_task_watch_error
 
 log = logging.getLogger(__name__)
+log.trace = lambda *x: log.log(5, *x)
 protocol_channel = "local_peers_protocol"
+
+running_server = None
 
 def peer_address(id, host, port):
     return {"id": id, "host": host, "port": port}
@@ -24,16 +27,37 @@ class PeerServer:
         self.peers = {}
         self.peers_queue = []
         self.address = peer_address(config["id"], "localhost", config["peers"]["listen_port"])
+        global running_server
+        running_server = self
+
+    def set_graph_port(self, port):
+        self.address["graphql_port"] = port
 
     async def run(self):
         log.info(f"Starting server as {self.address}")
-        server = await asyncio.start_server(self._handle_connection, port=config["peers"]["listen_port"])
+        log.warning("using hacky peers port selection")
+        for i in range(100):
+            try:
+                attempt_listen_port = config["peers"]["listen_port"]+i
+                log.trace("attempting peers listen port %s", attempt_listen_port)
+                server = await asyncio.start_server(self._handle_connection, port=attempt_listen_port)
+                config["peers"]["real_listen_port"] = attempt_listen_port
+                log.info("selected peers listen port %s", attempt_listen_port)
+                self.address["port"]=attempt_listen_port
+                break
+            except OSError:
+                continue
+
+        if not config["peers"]["real_listen_port"]:
+            raise Exception("failed to find a peers listen port")
+
         self.connect_thread = create_task_watch_error(self._connect_peers())
         await server.serve_forever()
 
     async def _connect_peers(self): 
         while True:
-            await asyncio.sleep(config["peers"]["connect_interval_seconds"])
+            max_sleep = config["peers"]["connect_interval_seconds"]
+            await asyncio.sleep(random.randrange(max_sleep/2, max_sleep))
             if len(self.peers_queue) == 0:
                 continue
             address = self.peers_queue.pop()
@@ -68,7 +92,7 @@ class PeerServer:
 
     async def _socket_lifecycle(self, address, socket):
         try:
-            peer_socket = PeerSocket(socket, self)
+            peer_socket = PeerSocket(socket, self, address)
             peer_socket.address = address
             if address["id"] in self.peers.keys():
                 self.peers[address["id"]].close()
@@ -76,8 +100,9 @@ class PeerServer:
             await peer_socket.wait_err()
         finally:
             log.info(f"connection with {address} broken")
-            self.peers[address["id"]].close()
-            del self.peers[address["id"]]
+            if address["id"] in self.peers:
+                self.peers[address["id"]].close()
+                del self.peers[address["id"]]
 
     def _is_new_address(self, address):
         if(address["id"] == self.address["id"]):
@@ -95,13 +120,14 @@ class PeerServer:
 
     def handle_message(self, message):
         if message["channel"] == protocol_channel:
-            self._handle_heartbeat(self, message)
+            self._handle_heartbeat(message)
         else:
             local_pubsub.pub(message["channel"], message)
 
     def _handle_heartbeat(self, heartbeat):
         if "peer" in heartbeat.keys():
             peer = heartbeat["peer"]
+            log.trace("handling a heartbeat from %s", peer["id"])
             if self._is_new_address(peer):
                 self.peers_queue.append(peer)
 
@@ -109,11 +135,12 @@ class PeerServer:
         self.peers_queue.append(peer_address(id, host, peer))
 
 class PeerSocket:
-    def __init__(self, socket, server):
+    def __init__(self, socket, server, address):
         self.socket = socket
         self.read_thread = asyncio.create_task(self._read())
         self.write_thread = asyncio.create_task(self._write())
         self.server = server
+        self.peer_address = address
 
     async def _read(self):
         while True:
@@ -126,8 +153,10 @@ class PeerSocket:
 
     async def _write(self):
         while True:
+            log.trace("writing a heartbeat to %s", self.address["id"])
             await self.socket.write_message(json.dumps(self.server.write_heartbeat()))
-            await asyncio.sleep(config["peers"]["heartbeat_interval_seconds"])
+            max_sleep = config["peers"]["heartbeat_interval_seconds"]
+            await asyncio.sleep(max_sleep/2, max_sleep)
 
     async def wait_err(self):
         await asyncio.wait([self.read_thread, self.write_thread], return_when=asyncio.FIRST_EXCEPTION)

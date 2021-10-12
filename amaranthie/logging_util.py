@@ -2,11 +2,14 @@ import logging
 import sys
 
 current_handler = None
-format_string = "[%(asctime)s:%(msecs)d][unknown_id][%(levelname)s] %(name)s.%(funcName)s.%(lineno)d: %(message)s"
+format_string = "[%(asctime)s:%(msecs)03d][unknown_id][%(levelname)s] %(name)s.%(funcName)s.%(lineno)d: %(message)s"
 id_abbrev_length = 6
 
 def init_setup():
     global current_handler
+
+    logging.TRACE = 5
+    logging.addLevelName(logging.TRACE, "TRACE")
 
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)

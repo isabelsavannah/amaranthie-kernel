@@ -6,8 +6,8 @@ config = {
 
   "peers": {
     "listen_port": 2000,
-    "heartbeat_interval_seconds": 30,
-    "connect_interval_seconds": 10,
+    "heartbeat_interval_seconds": 300,
+    "connect_interval_seconds": 30,
   },
 
   "state": {

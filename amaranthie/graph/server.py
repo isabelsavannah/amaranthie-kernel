@@ -1,6 +1,9 @@
+import asyncio
 from aiohttp import web
-from schema import schema
+from amaranthie.graph.schema import schema
 from strawberry.aiohttp.views import GraphQLView
+import logging
+log = logging.getLogger(__name__)
 
 async def handle(request):
     name = request.match_info.get('name', "Anonymous")
@@ -17,5 +20,11 @@ app = web.Application()
 app.add_routes([web.get('/', handle)])
 app.router.add_route("*", "/graphql", GraphQLView(schema=schema))
 
-if __name__ == '__main__':
-    web.run_app(app)
+def start():
+    try:
+        runner = web.AppRunner(app)
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(runner.setup())
+        loop.run_until_complete(web.TCPSite(runner).start())
+    except:
+        log.critical("Failed to start graphql server")
