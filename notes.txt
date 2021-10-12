@@ -17,3 +17,21 @@ crdts don't have to be kept in memory if it all understands itself in a tree
 
 fuck it, let's just do kademlia for our global db, is'nt this supposed to be fun? 
 and if we run 10 agents per host, we definitely have the size for it
+
+local_peers considered harmful. On top of the difficulties with actually
+getting multiple events for one udp broadcast on one host, it looks like even
+recieving broadcasts at all is messy. 
+
+So, lift that out to the bare metal agent. Let that do anything that doesn't
+decouple well from hardware, like broadcasting apparently. That agent is
+responsible for starting the kernel instances, so it can easily advertise what
+instances it hosts. Don't bother trying to include ids, just share endpoints
+and let them handshake on their own - great place to put the auth, too
+
+bare metal agent can just aggregate adds it recieves, drop them after a
+timeout, and then write them to a file all the agents can read. Don't bother
+trying to communicate anything the other way.
+
+For now, just replace localpeers with a hardcoded list to mock what the runner
+would be providing; would like to get crtds really working before dealing with
+docker
