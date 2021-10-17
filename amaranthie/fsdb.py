@@ -2,8 +2,8 @@ from amaranthie.config import config
 import os
 import shutil
 
-state_root = config["state"]["path"]
-encoding = config["state"]["encoding"]
+state_root = config.get(config.state_path)
+encoding = config.get(config.encoding)
 
 def get_keys(prefix):
     try:
@@ -44,6 +44,9 @@ class FsView:
     def __getitem__(self, key):
         return get(self.prefix, key)
 
-    def __setitem(self, key):
+    def __setitem__(self, key):
         return put(self.prefix, key)
+
+    def __iter__(self, key):
+        return get_keys(self.prefix, key).__iter__()
 

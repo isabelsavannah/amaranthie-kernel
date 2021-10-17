@@ -23,3 +23,14 @@ CRDT identifier:
 	(id x type) tuple (could do it without the type but why; makes it maximally simple to instantiate from disk)
 
 No support for nesting/domains in first version; everything can be global
+
+
+
+
+
+
+NEW PLAN, BETTER THAN THE OLD PLAN
+crfs
+just do a last-write-map over the directory structure. other crdts can be implemented on top of that. In the (rare!) occasion where we need to do somethign more fancy-crdt-y, just run it on top of this layer. Waaaay simpler.
+
+
