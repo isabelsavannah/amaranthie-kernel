@@ -35,3 +35,10 @@ trying to communicate anything the other way.
 For now, just replace localpeers with a hardcoded list to mock what the runner
 would be providing; would like to get crtds really working before dealing with
 docker
+
+Listen on a UDP socket to inject traffic to the central bus. Design is already
+to have multiple entrances to that pipe, no reason to make protocols with a lot
+of round trips do an http each time.
+
+gonna need an init concept, we're gonna have a bunch of different long running
+activities. Maybe an activity class for lifecycle tracking?

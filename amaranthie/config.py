@@ -11,7 +11,7 @@ peers_connect_interval_seconds = "peers/connect_interval_seconds"
 state_path = "state/path"
 state_encoding = "state/encoding"
 
-crfs_queries_per_message = "4"
+udp_port = "udp_port"
 
 hardcoded_default = {
   "id": random_id(),
@@ -26,6 +26,8 @@ hardcoded_default = {
     "path": "state",
     "encoding": "utf-8",
   },
+
+  "udp_port": 4000
 }
 
 def get(key):
