@@ -12,6 +12,7 @@ state_path = "state/path"
 state_encoding = "state/encoding"
 
 udp_port = "udp_port"
+graphql_port = "graphql_port"
 
 hardcoded_default = {
   "id": random_id(),
@@ -27,7 +28,8 @@ hardcoded_default = {
     "encoding": "utf-8",
   },
 
-  "udp_port": 4000
+  "udp_port": 4000,
+  "graphql_port": 8000
 }
 
 def get(key):

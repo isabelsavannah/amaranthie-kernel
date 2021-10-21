@@ -1,9 +1,9 @@
 import asyncio
 from amaranthie.graph.server import GraphServer
-#from amaranthie.udp_server import UdpServer 
+from amaranthie.udp_server import UdpServer 
 
 run_set = [
-        #UdpServer(),
+        UdpServer(),
         GraphServer(),
         ]
 
