@@ -3,10 +3,12 @@
 
 import asyncio
 from amaranthie.asy import create_task_watch_error
+from amaranthie.rich_id import RichId
 
 registrations = {}
 
 def sub(topic, async_callback):
+    topic = str(RichId(topic))
     if topic not in registrations:
         registrations[topic] = []
     registrations[topic].append(async_callback)
@@ -15,6 +17,9 @@ def sub_by_queue():
     # etc
     pass
 
+async def split_run(callback, msg):
+    callback(msg)
+
 async def pub(topic, message):
     if topic in registrations:
-        [create_task_watch_error(subber(message)) for subber in registrations[topic]]
+        [create_task_watch_error(split_run(subber, message)) for subber in registrations[topic]]

@@ -6,22 +6,14 @@ import hashlib
 import itertools
 import random
 
+def Fact(key, value):
+    return Fact(key, value, timestamp.now(), config.get(config.my_id))
 
-domains = {}
-def define_domain(name):
-    domains[name] = Domain(name)
-    return name
-
-internet = define_domain("internet")
-
-class Fact:
-    @staticmethod
-    def author(key, value):
-        return {"key": key,
-                "value": value,
-                "update_time": timestamp.now(),
-                "author": config.get(my_id)
-                }
+def Fact(key, value, update_time, author):
+    return {"key": key,
+            "value": value,
+            "update_time": timestamp.now(),
+            "author": config.get(my_id)}
 
 def Prompt(path, hash_bytes):
     return {"path": path, "hash": hash_bytes.encode()}

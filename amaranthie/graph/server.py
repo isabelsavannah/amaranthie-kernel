@@ -1,14 +1,14 @@
 import asyncio
 import sys
 from aiohttp import web
-from amaranthie.graph.schema import schema
-from amaranthie.activity import Activity
-from strawberry.aiohttp.views import GraphQLView
 from amaranthie import config
+from amaranthie.activity import Activity
+from amaranthie.graph.schema import schema
+from strawberry.aiohttp.views import GraphQLView
 import logging
 log = logging.getLogger(__name__)
 
-class GraphServer:
+class GraphServer(Activity):
     async def start(self):
         log.warning("Hacky graphql port selection!")
         self.port = config.get(config.graphql_port) + int(sys.argv[1])
