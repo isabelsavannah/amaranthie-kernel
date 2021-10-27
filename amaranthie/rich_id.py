@@ -47,16 +47,16 @@ def normalizing_flatten(args):
         if isinstance(element, str):
             if len(element) < 1:
                 raise IllegalIDException()
-            yield from element.split("/")
-            return
-        if isinstance(element, RichId):
+            parts = element.split("/")
+            if len(parts) > 1:
+                yield from parts
+            else:
+                yield element
+        elif isinstance(element, RichId):
             yield from element.id_words
-            return
-        if isinstance(element, pathlib.PurePath):
+        elif isinstance(element, pathlib.PurePath):
             yield from element.parts
-            return
         else:
             yield from normalizing_flatten(element)
-            return
 
 

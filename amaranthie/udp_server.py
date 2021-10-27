@@ -9,11 +9,12 @@ import sys
 log = logging.getLogger(__name__)
 
 class UdpServer(Activity):
-    async def handle(self, string):
+    async def handle(self, string, addr):
         try:
             obj = json.loads(string)
             topic = obj["topic"]
             content = obj["content"]
+            obj["lazy_sender"] = addr
             await local_pubsub.pub(topic, content)
         except Exception as ex:
             logging.debug("Failed to parse udp message: %s", ex)
@@ -23,7 +24,7 @@ class UdpServer(Activity):
             pass
 
         def datagram_received(self_inner, data, addr):
-            self.handle(data)
+            self.handle(data, addr)
 
     async def run(self):
         log.warning("Hacky UDP port selection!")

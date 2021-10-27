@@ -14,6 +14,8 @@ state_encoding = "state/encoding"
 udp_port = "udp_port"
 graphql_port = "graphql_port"
 
+crfs_sync_interval_seconds = 30*60
+
 hardcoded_default = {
   "id": random_id(),
 

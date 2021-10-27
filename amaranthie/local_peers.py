@@ -8,4 +8,5 @@ class LocalPeerRef:
 
 def local_peers():
     base_port = config.get(config.udp_port)
-    return [LocalPeerRef('localhost', base_port+i for i in range(8) if i != int(sys.argv[0])]
+    import sys
+    return [LocalPeerRef('localhost', base_port+i) for i in range(8) if i != int(sys.argv[1])]
