@@ -9,22 +9,20 @@ import sys
 log = logging.getLogger(__name__)
 
 class UdpServer(Activity):
-    async def handle(self, string, addr):
-        try:
-            obj = json.loads(string.decode(config.get(config.udp_encoding)))
-            topic = obj["topic"]
-            content = obj["content"]
-            obj["lazy_sender"] = addr
-            await local_pubsub.pub(topic, content)
-        except Exception as ex:
-            logging.debug("Failed to parse udp message: %s", ex)
-
     class Protocol(asyncio.DatagramProtocol):
         def connection_made(self, transport):
             pass
 
-        def datagram_received(self_inner, data, addr):
-            self.handle(data, addr)
+        def datagram_received(self, data, addr):
+            try:
+                obj = json.loads(data.decode(config.get(config.udp_encoding)))
+                topic = obj["topic"]
+                content = obj["data"]
+                obj["lazy_sender"] = addr
+                local_pubsub.pub(topic, obj)
+            except Exception as ex:
+                log.debug("Failed to parse udp message: %s", ex)
+                raise ex
 
     async def run(self):
         log.warning("Hacky UDP port selection!")

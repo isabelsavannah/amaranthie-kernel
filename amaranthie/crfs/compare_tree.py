@@ -1,4 +1,6 @@
 import json
+import itertools
+from amaranthie import config
 from amaranthie.crfs.hash import obj_hash, Hash
 from amaranthie.crfs.types import Batch
 
@@ -20,15 +22,15 @@ class CompareTree:
             yield from self.root.query(path)
 
     def handle_batch(self, batch):
-        result = ComparePromptResultData(incoming_query_results)
-        result.explore_iter = explore(batch, result)
+        result = ComparePromptResultData(batch["queries"])
+        result.explore_iter = self.explore(batch, result)
         return result
 
 class CompareBranch:
     def __init__(self):
         self.children = None
         self.value = None
-        self.hash = ""
+        self.hash = b''
 
     def insert(self, path, fact):
         if self.children:
@@ -121,15 +123,15 @@ class ComparePromptResultData:
     # collect the iterators and such
 
     def __init__(self, incoming_queries):
-        self.saved_query_paths = []
-        self.saved_accept_paths = []
-        self.saved_send_set = {}
+        self.query_paths = []
+        self.accept_paths = []
+        self.send_set = {}
         self.incoming_queries = incoming_queries
         self.queries_cap = config.get(config.crfs_queries_per_message)
 
     def assemble_response_batch(self):
-        new_prompts = list(itertools.islice(new_prompts, self.queries_cap))
-        new_queries = list(itertools.islice(self.saved_query_paths, self.queries_cap))
+        new_prompts = list(itertools.islice(self.explore_iter, self.queries_cap))
+        new_queries = list(itertools.islice(self.query_paths, self.queries_cap))
 
         return Batch(new_prompts, new_queries)
 
@@ -144,10 +146,10 @@ class ComparePromptResultData:
                 yield fact
 
     def facts_to_send(self):
-        return itertools.islice(unique_facts(zip(self.incoming_queries, self.saved_send_set.values())), self.queries_cap)
+        return itertools.islice(self.unique_facts(zip(self.incoming_queries, self.send_set.values())), self.queries_cap)
 
     def has_accepted(path):
-        for accept_path in self.saved_accept_paths:
+        for accept_path in self.accept_paths:
             if path == acceptPath or path.startswith(acceptPath):
                 return True
         return False

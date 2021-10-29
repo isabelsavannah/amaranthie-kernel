@@ -24,8 +24,10 @@ class Domain(Activity):
         self.log = logging.getLogger("amaranthie.domain." + name)
 
     async def handle_batch(self, msg):
+        print(msg)
         batch = msg["data"]
-        sender = msg["sender"]
+        self.log.warning("hacky...")
+        sender = msg["lazy_sender"]
 
         self.log.info("Handling a crfs query batch from %s with %d prompts, %d queries", 
                 str(sender),

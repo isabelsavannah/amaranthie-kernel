@@ -4,6 +4,7 @@ import json
 import logging
 from amaranthie import config
 from amaranthie.local_peers import local_peers
+from amaranthie.rich_id import RichId
 
 log = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ async def lazy_broadcast(topic, content):
         await lazy_send(peer, topic, content)
 
 async def lazy_send(target_ref, topic, content, error_handler=lambda x: x):
-    msg = {"topic": topic, "data": content}
+    msg = {"topic": str(RichId(topic)), "data": content}
 
     class Sender:
         def connection_made(self, transport):

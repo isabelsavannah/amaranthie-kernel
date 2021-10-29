@@ -15,7 +15,8 @@ udp_port = "udp_port"
 udp_encoding = "udp_encoding"
 graphql_port = "graphql_port"
 
-crfs_sync_interval_seconds = 30*60
+crfs_sync_interval_seconds = "crfs/sync_interval_seconds"
+crfs_queries_per_message = "crfs/queries_per_message"
 
 hardcoded_default = {
   "id": random_id(),
@@ -29,6 +30,11 @@ hardcoded_default = {
   "state": {
     "path": "state",
     "encoding": "utf-8",
+  },
+
+  "crfs": {
+      "sync_interval_seconds": 30*60,
+      "queries_per_message": 20,
   },
 
   "udp_port": 4000,
