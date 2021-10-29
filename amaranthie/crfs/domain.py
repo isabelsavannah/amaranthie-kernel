@@ -6,6 +6,7 @@ from amaranthie.crfs.compare_tree import CompareTree
 from amaranthie.crfs.types import Batch, Prompt
 
 import logging
+import asyncio
 
 class Domain(Activity):
     known = {}
@@ -61,7 +62,7 @@ class Domain(Activity):
 
     def root_query(self):
         return Batch([
-            Prompt("", self.tree.root.hash)],
+            Prompt("", hash_bytes=self.tree.root.hash)],
             [])
 
     async def handle_fact(self, msg):
@@ -84,7 +85,7 @@ class Domain(Activity):
             swip = self.share
             self.share = self.noop
             path = []
-            for i in range(100):
+            for i in range(1):
                 if random.randint(0, 9) <= 2:
                     path = path + [random_id()[0:4]]
                 if random.randint(0, 9) <= 2 and path:
@@ -92,6 +93,9 @@ class Domain(Activity):
                 self.view[path + [random_id()]] = random_id()
             self.share = swip
             self.log.info("loaded test data")
+
+            await asyncio.sleep(10)
+            #self.log.info("starting test sync")
 
             await net.lazy_send(net.get_random_peer_ref(), self.batches_topic, self.root_query())
 

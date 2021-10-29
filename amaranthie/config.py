@@ -12,6 +12,7 @@ state_path = "state/path"
 state_encoding = "state/encoding"
 
 udp_port = "udp_port"
+udp_encoding = "udp_encoding"
 graphql_port = "graphql_port"
 
 crfs_sync_interval_seconds = 30*60
@@ -31,7 +32,9 @@ hardcoded_default = {
   },
 
   "udp_port": 4000,
-  "graphql_port": 8000
+  "graphql_port": 8000,
+
+  "udp_encoding": "utf-8",
 }
 
 def get(key):

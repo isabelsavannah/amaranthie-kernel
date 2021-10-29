@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 class UdpServer(Activity):
     async def handle(self, string, addr):
         try:
-            obj = json.loads(string)
+            obj = json.loads(string.decode(config.get(config.udp_encoding)))
             topic = obj["topic"]
             content = obj["content"]
             obj["lazy_sender"] = addr
@@ -33,5 +33,5 @@ class UdpServer(Activity):
         loop = asyncio.get_running_loop()
 
         self.transport, self.protocol = await loop.create_datagram_endpoint(
-                lambda: self.Protocol(), local_addr=('127.0.0.1', self.port))
+                lambda: self.Protocol(), local_addr=('0.0.0.0', self.port))
         log.info("Listening for UDP on port %d", self.port)

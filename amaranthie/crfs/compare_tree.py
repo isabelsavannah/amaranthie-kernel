@@ -97,7 +97,7 @@ class CompareBranch:
                 yield from []
         else:
             # The challenge refers to our location exactly. Do we match it?
-            if prompt["hash"] == self.hash:
+            if prompt["hash"] == self.hash.hex():
                 # No disagreement, so no further investigation is required
                 side_effects.accept(prompt["path"])
                 yield from []

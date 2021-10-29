@@ -1,3 +1,5 @@
-from amaranthie.init import singleton as init
+from amaranthie import init
 
-init.run()
+init.singleton().run_forever()
+
+
