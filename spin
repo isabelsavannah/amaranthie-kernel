@@ -7,7 +7,7 @@ import time
 processes = []
 for i in range(8):
     processes.append(subprocess.Popen(["python3", "main.py", str(i)]))
-    time.sleep(1.5)
+    time.sleep(1)
 
 while True:
     try:

@@ -4,6 +4,7 @@ from amaranthie.activity import Activity
 from amaranthie.crfs.crfs_view import CrfsView
 from amaranthie.crfs.compare_tree import CompareTree
 from amaranthie.crfs.types import Batch, Prompt
+from amaranthie.random_util import random_delay
 
 import logging
 import asyncio
@@ -24,7 +25,6 @@ class Domain(Activity):
         self.log = logging.getLogger("amaranthie.domain." + name)
 
     async def handle_batch(self, msg):
-        print(msg)
         batch = msg["data"]
         self.log.warning("hacky...")
         sender = msg["lazy_sender"]
@@ -46,10 +46,16 @@ class Domain(Activity):
 
         if response["queries"] or response["prompts"]:
             await net.lazy_send(sender, self.batches_topic, response)
+        else:
+            self.log.debug("Not sending response query because it is empty")
 
+        facts_count = 0
         for fact in facts:
             self.log.debug("sending %s to %s", fact["key"], str(sender))
-            await net.lazy_send(sender, self.facts_topic, response)
+            await net.lazy_send(sender, self.facts_topic, fact)
+            facts_count += 1
+
+        self.log.info("sent %d facts to %s", facts_count, str(sender))
 
     def update(self, fact):
         self.log.debug("applying an update to %s to local hash tree", fact["key"])
@@ -81,25 +87,26 @@ class Domain(Activity):
         import sys
         import random
         from amaranthie.random_util import random_id
-        if(int(sys.argv[1]) == 0):
-            self.log.info("initiating prototype sync")
-            view = CrfsView(self.name)
-            swip = self.share
-            self.share = self.noop
-            path = []
-            for i in range(1):
-                if random.randint(0, 9) <= 2:
-                    path = path + [random_id()[0:4]]
-                if random.randint(0, 9) <= 2 and path:
-                    path = path[:-1]
-                self.view[path + [random_id()]] = random_id()
-            self.share = swip
-            self.log.info("loaded test data")
 
-            await asyncio.sleep(10)
-            #self.log.info("starting test sync")
+        self.log.info("initiating prototype sync")
+        view = CrfsView(self.name)
+        swip = self.share
+        self.share = self.noop
+        path = []
+        for i in range(100):
+            if random.randint(0, 9) <= 2:
+                path = path + [random_id()[0:4]]
+            if random.randint(0, 9) <= 2 and path:
+                path = path[:-1]
+            self.view[path + [random_id()]] = random_id()
+        self.share = swip
+        self.log.info("loaded test data")
 
-            await net.lazy_send(net.get_random_peer_ref(), self.batches_topic, self.root_query())
+        while True:
+            await asyncio.sleep(random_delay(120))
+            peer = net.get_random_peer_ref()
+            self.log.debug("starting test sync with %s", peer)
+            await net.lazy_send(peer, self.batches_topic, self.root_query())
 
     @staticmethod
     def define(name):

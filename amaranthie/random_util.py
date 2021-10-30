@@ -8,3 +8,6 @@ def random_id():
 
 def random_delay(max_delay):
     return random.randrange(max_delay/2, max_delay)
+
+def shuffled(ls):
+    return random.sample(ls, len(ls))

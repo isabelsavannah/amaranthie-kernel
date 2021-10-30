@@ -24,7 +24,7 @@ async def lazy_send(target_ref, topic, content, error_handler=lambda x: x):
             error_handler(exc)
 
     await asyncio.get_running_loop().create_datagram_endpoint(
-            lambda: Sender(), remote_addr=(target_ref.host, target_ref.port))
+            lambda: Sender(), remote_addr=(target_ref.host, target_ref.port), local_addr=('0.0.0.0', config.get(config.udp_port) + 1000))
 
 def get_random_peer_ref():
     return random.choice(local_peers())

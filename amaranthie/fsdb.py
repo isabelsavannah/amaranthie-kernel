@@ -6,6 +6,9 @@ import shutil
 state_root = config.get(config.state_path)
 encoding = config.get(config.state_encoding)
 
+import sys
+state_root = os.path.join(state_root, sys.argv[1])
+
 def get_keys(prefix):
     try:
         return os.listdir(pathify(prefix))
@@ -16,8 +19,6 @@ def has(prefix, key):
     return os.path.exists(pathify(prefix, key))
 
 def get(prefix, key):
-    import pdb
-    pdb.set_trace()
     with open(pathify(prefix, key), mode='rt', encoding=encoding) as f:
         return f.read()
 

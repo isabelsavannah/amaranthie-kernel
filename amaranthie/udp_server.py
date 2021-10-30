@@ -1,4 +1,5 @@
 from amaranthie.activity import Activity
+from amaranthie.local_peers import LocalPeerRef
 from amaranthie import local_pubsub
 from amaranthie import config
 import logging
@@ -18,7 +19,8 @@ class UdpServer(Activity):
                 obj = json.loads(data.decode(config.get(config.udp_encoding)))
                 topic = obj["topic"]
                 content = obj["data"]
-                obj["lazy_sender"] = addr
+                host, peer = addr
+                obj["lazy_sender"] = LocalPeerRef('0.0.0.0', peer-1000)
                 local_pubsub.pub(topic, obj)
             except Exception as ex:
                 log.debug("Failed to parse udp message: %s", ex)

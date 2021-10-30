@@ -1,7 +1,11 @@
 from amaranthie import config
 from amaranthie.crfs import timestamp
+from amaranthie.rich_id import RichId
 
 def Fact(key, value, update_time=None, author=None):
+    key = str(RichId(key))
+    if len(key) < 5:
+        raise "here"
     if not update_time:
         update_time = timestamp.now()
     if not author:

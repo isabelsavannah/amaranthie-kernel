@@ -22,13 +22,16 @@ class CrfsView:
 
     def __getitem__(self, key):
         # might want to cache 
-        return json.loads(self.fs[key])["value"]
+        return self.get_raw(key)["value"]
+
+    def get_raw(self, key):
+        return json.loads(self.fs[key])
 
     def set_fact(self, fact):
         key = fact["key"]
         if key in self:
-            old_fact = self[key]
-            if fact["timestamp"] <= old_fact["timestamp"]:
+            old_fact = self.get_raw(key)
+            if fact["update_time"] <= old_fact["update_time"]:
                 return False
         self.fs[key] = json.dumps(fact)
         return True
