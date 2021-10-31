@@ -16,9 +16,9 @@ def Fact(key, value, update_time=None, author=None):
             "author": config.get(config.my_id)}
 
 def Prompt(path, hash_bytes = None, hash_string = None):
-    if hash_bytes:
+    if hash_bytes != None:
         return {"path": path, "hash": hash_bytes.hex()}
-    elif hash_string:
+    elif hash_string != None:
         return {"path": path, "hash": hash_string}
     else:
         raise ValueError("require hash_bytes or hash_string")

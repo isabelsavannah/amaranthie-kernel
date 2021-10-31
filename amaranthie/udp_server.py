@@ -21,6 +21,7 @@ class UdpServer(Activity):
                 content = obj["data"]
                 host, peer = addr
                 obj["lazy_sender"] = LocalPeerRef('0.0.0.0', peer-1000)
+                log.debug("udp from %s", addr)
                 local_pubsub.pub(topic, obj)
             except Exception as ex:
                 log.debug("Failed to parse udp message: %s", ex)

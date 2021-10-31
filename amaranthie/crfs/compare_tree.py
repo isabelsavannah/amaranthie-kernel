@@ -8,6 +8,8 @@ from amaranthie.random_util import shuffled
 
 log = logging.getLogger(__name__)
 
+hex_bytes = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f']
+
 def path_for(fact):
     return Hash(fact["key"]).compute().hex()
 
@@ -42,10 +44,13 @@ class CompareBranch:
         self.hash = b''
         self.path = path
 
-    def debug_print(self, indent):
+    def debug_print(self, indent=0):
         if self.children: 
+            print(' '*indent, self.path, self.hash.hex())
             for child in self.children.values():
                 child.debug_print(indent+1)
+        else:
+            print(' '*indent, path_for(self.value)[0:8], self.hash.hex(), self.value["key"])
 
     def insert(self, path, fact):
         if self.children != None:
@@ -58,7 +63,7 @@ class CompareBranch:
             self.children[branch].insert(path[1:], fact)
 
             hash_progress = Hash()
-            for branch in self.children:
+            for branch in sorted(self.children.keys()):
                 hash_progress.write(self.children[branch].hash)
 
             self.hash = hash_progress.compute()
@@ -92,17 +97,19 @@ class CompareBranch:
     def query(self, path):
         # Return an iterator of stored facts that could be provided in response
         # to this query path
+        log.debug("query at %s, rest %s", self.path, path)
         if len(path) > 0:
-            log.debug("recursing to find root of query")
             branch = path[0]
             if branch in self.children:
+                log.debug("recursing to find root of query")
                 rest = path[1:]
-                return self.children[branch].query(rest)
+                yield from self.children[branch].query(rest)
             else:
+                log.debug("we have nothing under this tree; halting")
                 yield from []
         elif self.children:
             log.debug("recursing to enumerate query results")
-            for key in self.children:
+            for key in shuffled(self.children.keys()):
                 yield from self.children[key].query(path)
         elif self.value:
             log.debug("returning my value: %s", self.value)
@@ -119,23 +126,32 @@ class CompareBranch:
         # Return an iterator of prompts to return to them in a challenge, while
         # issuing download requests and shares through the side effects object.
 
-        log.debug("challenge at %s", path)
+        log.debug("challenge at %s with rest %s", self.path, path)
         if len(path) > 0:
             # The challenge refers to some point inside our subtree. Does that
             # geography exist for us?
             branch = path[0]
             rest = path[1:]
-            if branch in self.children:
+            if self.children and branch in self.children:
                 log.debug("recursing to %s child", branch)
                 yield from self.children[branch].challenge(rest, prompt, side_effects)
+            elif not prompt["hash"]:
+                log.debug("we agree with negative challenge")
+                side_effects.accept(prompt["path"])
             else:
                 log.debug("missing child %s, responding with a query", branch)
                 side_effects.query(prompt["path"])
                 yield from []
         else:
             # The challenge refers to our location exactly. Do we match it?
-            if prompt["hash"] == self.hash.hex():
-                log.debug("we agree with this query")
+            if not prompt["hash"]:
+                # They do not have this subtree, send our entire subtree
+                log.debug("we disagree with negative challenge; sending our subtree")
+                side_effects.send_all(self.query(''))
+            elif prompt["hash"] == self.hash.hex():
+                log.debug("we agree with this prompt")
+                log.debug("my hash %s their hash %s", self.hash.hex(), prompt["hash"])
+                log.debug("my value %s", self.value)
                 side_effects.accept(prompt["path"])
                 yield from []
             else:
@@ -144,7 +160,12 @@ class CompareBranch:
                 if self.children:
                     # If they don't have children, we share, if they do, we recurse. Either way:
                     log.debug("we disagree with this query here; returning a prompt for each of our children")
-                    yield from [Prompt(path+branch, self.children[branch].hash) for branch in shuffled(self.children.keys())]
+                    for branch in shuffled(hex_bytes):
+                        next_path = self.path+branch
+                        if branch in self.children:
+                            yield Prompt(next_path, self.children[branch].hash)
+                        else:
+                            yield Prompt(next_path, hash_string = '')
                 elif self.value:
                     # They may have a different value or a whole tree, either way exchange:
                     log.debug("we disagree with this query here and we are a leaf; returning our value and a query here")
@@ -163,7 +184,8 @@ class ComparePromptResultData:
     def __init__(self, incoming_queries_results):
         self.query_paths = []
         self.accept_paths = []
-        self.send_set = {}
+        self.send_facts_bare = []
+        self.send_facts_iters = []
         self.incoming_queries_results = incoming_queries_results
         self.queries_cap = config.get(config.crfs_queries_per_message)
 
@@ -183,15 +205,15 @@ class ComparePromptResultData:
                 so_far[key] = True
                 yield fact
 
-    def merge_iterators(self, a, b):
-        for (a_item, b_item) in itertools.zip_longest(a, b):
-            if a_item:
-                yield a_item
-            if b_item:
-                yield b_item
+    def merge_iterators(self, iters_list):
+        for tup in itertools.zip_longest(*shuffled(iters_list)):
+            for item in tup:
+                if item:
+                    yield item
 
     def facts_to_send(self):
-        facts = self.merge_iterators(self.incoming_queries_results, self.send_set.values())
+        facts = self.merge_iterators([self.incoming_queries_results, self.send_facts_bare] 
+                + self.send_facts_iters)
         return itertools.islice(self.unique_facts(facts), self.queries_cap)
 
     def has_accepted(path):
@@ -201,7 +223,10 @@ class ComparePromptResultData:
         return False
 
     def send(self, value):
-        self.send_set[value["key"]] = value
+        self.send_facts_bare.append(value)
+
+    def send_all(self, value_iter):
+        self.send_facts_iters.append(value_iter)
 
     def query(self, path):
         self.combine(self.query_paths, path)

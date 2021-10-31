@@ -5,7 +5,7 @@ import subprocess
 import time
 
 processes = []
-for i in range(8):
+for i in range(2):
     processes.append(subprocess.Popen(["python3", "main.py", str(i)]))
     time.sleep(1)
 

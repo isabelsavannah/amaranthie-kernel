@@ -1,0 +1,6 @@
+set up some more sophisticated logging controls so I don't have to delete the debug output from crfs
+remove debug delays from sync
+remove hacky net setup
+crfs rehydration
+stop leaking udp ports
+

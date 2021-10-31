@@ -15,11 +15,12 @@ class Hash:
         return self.crypt.digest()
 
 def obj_canonical(obj):
-    if isinstance(obj, collections.Mapping):
-        return [[k, obj_canonical(k)] for k in sorted(obj.keys())]
-    if isinstance(obj, collections.Sequence):
-        return [i for i in obj]
-    return obj
+    if isinstance(obj, dict):
+        return [[obj_canonical(k), obj_canonical(obj[k])] for k in sorted(obj.keys())]
+    elif isinstance(obj, list):
+        return [obj_canonical(i) for i in obj]
+    else:
+        return obj
 
 def obj_hash(obj):
     return Hash(str(obj_canonical(obj))).compute()
